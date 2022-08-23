@@ -7,11 +7,11 @@ import numpy as np
 
 from losses import *
 from transforms import *
-from model import Encoder
+from model import HGRL
 from graph_learner import ATT_learner
 
 from dataset import load_nc_dataset, load_arxiv_year_dataset
-from data_utils import normalize, gen_normalized_adjs, evaluate, eval_acc, eval_rocauc, to_sparse_tensor, load_fixed_splits
+from data_utils import load_fixed_splits
 from eval_tools import kmeans_test
 
 from eval.logistic_regression_eval import linear_eval
@@ -42,12 +42,16 @@ parser.add_argument('--weight_decay', type=float, default=0.0005)
 parser.add_argument('--hidden_size', type=int, default=512)
 parser.add_argument('--output_size', type=int, default=512)
 parser.add_argument('--dropout', type=float, default=0.4)
+parser.add_argument('--feat_drop', type=float, default=0.2)
+parser.add_argument('--edge_drop', type=float, default=0.2)
 parser.add_argument('--K', type=int, default=3, help="number of layer in hierarchial_n2n loss")
 parser.add_argument('--dataset', type=str, default='cornell')
 parser.add_argument('--sub_dataset', type=str, default='')
 parser.add_argument('--directed', action='store_true',
                     help='set to not symmetrize adjacency')
 parser.add_argument('--alpha', type=float, default=0.9)
+parser.add_argument('--scale', type=float, default=0.01, 
+                    help='factor that scales the loss of CCA')
 parser.add_argument('--seed', type=int, default=42)
 parser.add_argument('--eval_every', type=int, default=1)
 parser.add_argument('--k', type=int, default=8, help="number of neighbors of knn augmentation")
@@ -121,16 +125,15 @@ def train(model, graph_learner, optimizer, data, args):
 
     optimizer.zero_grad()
 
-    x1, edge_index = data.graph['node_feat'], data.graph['edge_index']
-    x2, knn_edge_index = feat_drop(
-        data.graph['node_feat']), KNN_graph(data.graph['node_feat'], k=args.k)
-
-    drop_edge_index = edge_drop(data.graph['edge_index'])
+    x1, x2 = data.graph['node_feat'], feat_drop(data.graph['node_feat'], p=args.feat_drop)
+    edge_index = data.graph['edge_index']
+    
+    knn_edge_index = KNN_graph(data.graph['node_feat'], k=args.k)
+    drop_edge_index = edge_drop(data.graph['edge_index'], p=args.edge_drop)
 
     learned_adj = graph_learner(data.graph['node_feat'])
     learned_edge_index = torch.nonzero(learned_adj).t()
-    learned_edge_weight = learned_adj[learned_edge_index[0],
-                                      learned_edge_index[1]]
+    learned_edge_weight = learned_adj[learned_edge_index[0], learned_edge_index[1]]
 
     h1 = model(x1)
     h2 = model(x2)
@@ -145,14 +148,16 @@ def train(model, graph_learner, optimizer, data, args):
     elif args.topology_augmentation=='drop':
         # drop adj
         hs1 = model.prop(h1, drop_edge_index)
-    else:
+    elif args.topology_augmentation=='init':
         # init adj
         hs1 = model.prop(h1, edge_index)
+    else:
+        raise ValueError("Unrecognized augmentation")
 
 
     alpha = args.alpha
     # hn2n+CCA(h1, h2)
-    loss = alpha*model.hierarchial_n2n(h1, hs1) + 0.01*(1-alpha)*CCA_SSG(h1, h2, beta=0)
+    loss = alpha*model.hierarchial_n2n(h1, hs1) + (1-alpha)*args.scale*CCA_SSG(h1, h2, beta=0)
 
     print(f"loss: {loss.item()}")
 
@@ -197,7 +202,7 @@ def test(model, data, epoch, args, split_idx=None, task='node_classification'):
 
 best_results = []
 for run in range(args.runs):
-    model = Encoder(dataset, args)
+    model = HGRL(dataset, args)
     graph_learner = ATT_learner(2, isize=feat_dimension, k=args.k, knn_metric=args.knn_metric,
                                 i=6, sparse=args.sparse, mlp_act=args.activation_learner)
 
@@ -257,6 +262,8 @@ for run in range(args.runs):
         print(f'Highest ari: {100*result[:, 4].max():.2f}')
 
         best_results.append((best_acc, best_nmi, best_ari))
+    else:
+        raise ValueError("Unrecognized task")
 
 if args.task == 'node_classification':
     best_result = 100*torch.tensor(best_results)

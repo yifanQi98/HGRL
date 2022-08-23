@@ -17,6 +17,8 @@ def KNN_graph(x, k=12):
     return edge_index
 
 def edge_drop(edge_index, p=0.4):
+    # copy edge_index
+    edge_index = copy.deepcopy(edge_index)
     num_edges = edge_index.size(1)
     num_droped = int(num_edges*p)
     perm = torch.randperm(num_edges)

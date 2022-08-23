@@ -30,7 +30,7 @@ class GCN_prop(MessagePassing):
         return '{}(K={})'.format(self.__class__.__name__, self.K,)
 
 
-class Encoder(nn.Module):
+class HGRL(nn.Module):
     def __init__(self, dataset, args):
         super().__init__()
 

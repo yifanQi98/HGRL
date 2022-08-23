@@ -1,5 +1,5 @@
 #  [CIKM 2022]-Towards Self-supervised Learning on Graphs with Heterophily
-Code of HeteroSSL model proposed in the CIKM 2022 paper [Towards Self-supervised Learning on Graphs with Heterophily](arxiv_url).
+Source code of HGRL model proposed in the CIKM 2022 paper [Towards Self-supervised Learning on Graphs with Heterophily](arxiv_url).
 
 ## Dependencies
 
@@ -58,7 +58,7 @@ python main.py --dataset film --epochs 500 --lr 0.005 --lr_gamma 0.005 --weight_
 python main.py --dataset squirrel --epochs 500 --lr 0.005 --lr_gamma 0.005 --weight_decay 0.0005 --hidden_size 512 --output_size 512 --dropout 0.4 --method hn2n_CCA_init_adj --task node_classification --topology_augmentation init
 
 # Chameleon
-python main.py --dataset squirrel --epochs 500 --lr 0.005 --lr_gamma 0.005 --weight_decay 0.0005 --hidden_size 512 --output_size 512 --dropout 0.3 --method hn2n_CCA_init_adj --task node_classification --topology_augmentation init
+python main.py --dataset chameleon --epochs 500 --lr 0.005 --lr_gamma 0.005 --weight_decay 0.0005 --hidden_size 512 --output_size 512 --dropout 0.3 --method hn2n_CCA_init_adj --task node_classification --topology_augmentation init
 
 # Cornell
 python main.py --dataset cornell --epochs 500 --lr 0.005 --lr_gamma 0.005 --weight_decay 0.0005 --hidden_size 512 --output_size 512 --dropout 0.4 --method hn2n_CCA_learned_adj --task node_classification
