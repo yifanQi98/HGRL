@@ -1,5 +1,5 @@
 #  [CIKM 2022]-Towards Self-supervised Learning on Graphs with Heterophily
-Source code of HGRL model proposed in the CIKM 2022 paper [Towards Self-supervised Learning on Graphs with Heterophily](arxiv_url).
+Source code of HGRL model proposed in the CIKM 2022 paper [Towards Self-supervised Learning on Graphs with Heterophily](https://dl.acm.org/doi/10.1145/3511808.3557478).
 
 ## Dependencies
 
